@@ -8,7 +8,7 @@ import remarkCollapse from "remark-collapse";
 import remarkToc from "remark-toc";
 import config from "./src/config/config.json";
 
-import netlify from "@astrojs/netlify";
+import cloudflare from "@astrojs/cloudflare";
 
 // https://astro.build/config
 export default defineConfig({
@@ -17,7 +17,16 @@ export default defineConfig({
   trailingSlash: config.site.trailing_slash ? "always" : "never",
   output: "server",
 
-  vite: { plugins: [tailwindcss()] },
+  vite: {
+    plugins: [tailwindcss()],
+    resolve: {
+      // Use react-dom/server.edge instead of react-dom/server.browser for React 19.
+      // Without this, MessageChannel from node:worker_threads needs to be polyfilled.
+      alias: import.meta.env.PROD && {
+        "react-dom/server": "react-dom/server.edge",
+      },
+    },
+  },
   integrations: [
     react(),
     sitemap(),
@@ -52,5 +61,10 @@ export default defineConfig({
     extendDefaultPlugins: true,
   },
 
-  adapter: netlify(),
+  adapter: cloudflare({
+    imageService: cloudflare,
+    platformProxy: {
+      enabled: true,
+    },
+  }),
 });
